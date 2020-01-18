@@ -24,10 +24,10 @@ import edu.wpi.first.wpilibj.drive.DifferentialDrive;
  */
 public class Robot extends TimedRobot {
   WPI_TalonSRX m_left1=null;
-  WPI_TalonSRX m_left11=null;
+  WPI_VictorSPX m_left11=null;
   WPI_VictorSPX m_left12=null;
   WPI_TalonSRX m_right2=null;
-  WPI_TalonSRX m_right21=null;
+  WPI_VictorSPX m_right21=null;
   WPI_VictorSPX m_right22=null;  
   DifferentialDrive m_drive =null;
   Joystick m_joy = null;
@@ -39,10 +39,10 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     m_left1=new WPI_TalonSRX(1);
-    m_left11=new WPI_TalonSRX(11);
+    m_left11=new WPI_VictorSPX(11);
     m_left12=new WPI_VictorSPX(12);
     m_right2=new WPI_TalonSRX(2);
-    m_right21=new WPI_TalonSRX(21);
+    m_right21=new WPI_VictorSPX(21);
     m_right22=new WPI_VictorSPX(22);
     m_left1.configFactoryDefault();
     m_left11.configFactoryDefault();
@@ -61,6 +61,7 @@ public class Robot extends TimedRobot {
 		m_right21.setInverted(InvertType.FollowMaster);
     m_right22.setInverted(InvertType.FollowMaster);
     m_drive = new DifferentialDrive(m_left1, m_right2);
+    m_drive.setRightSideInverted(false);
 
     /* Joystick for control */
 	  m_joy = new Joystick(0);
@@ -80,6 +81,27 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
+    double forward = -1.0 * m_joy.getY();	// Sign this so forward is positive
+		double turn = +1.0 * m_joy.getZ();       // Sign this so right is positive
+        
+        /* Deadband - within 10% joystick, make it zero */
+		if (Math.abs(forward) < 0.10) {
+			forward = 0;
+		}
+		if (Math.abs(turn) < 0.10) {
+			turn = 0;
+		}
+        
+		/**
+		 * Print the joystick values to sign them, comment
+		 * out this line after checking the joystick directions. 
+		 */
+        System.out.println("JoyY:" + forward + "  turn:" + turn );
+        
+		/**
+		 * Drive the robot, 
+		 */
+		m_drive.arcadeDrive(forward, turn);
   }
 
   @Override

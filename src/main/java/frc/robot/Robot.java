@@ -7,6 +7,7 @@
 
 package frc.robot;
 
+import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
@@ -14,6 +15,7 @@ import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -31,6 +33,11 @@ public class Robot extends TimedRobot {
   WPI_VictorSPX m_right22=null;  
   DifferentialDrive m_drive =null;
   Joystick m_joy = null;
+
+  int leftInitialEncoder = 0;
+  int rightInitialEncoder = 0;
+  double initialHeading = 0;
+  String autoState = null;
 
   /**
    * This function is run when the robot is first started up and should be used
@@ -50,6 +57,8 @@ public class Robot extends TimedRobot {
     m_right2.configFactoryDefault();
     m_right21.configFactoryDefault();
     m_right22.configFactoryDefault();
+    m_left1.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 10);
+    m_right2.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 10);
     m_left11.follow(m_left1);
     m_left12.follow(m_left1);
     m_right21.follow(m_right2);
@@ -64,19 +73,83 @@ public class Robot extends TimedRobot {
     m_drive.setRightSideInverted(false);
 
     /* Joystick for control */
-	  m_joy = new Joystick(0);
+    m_joy = new Joystick(0);
+    
   }
 
   @Override
   public void autonomousInit() {
+    autoState = "initial";
+    leftInitialEncoder = -1 * m_left1.getSelectedSensorPosition(0);
+    rightInitialEncoder = -1 * m_right2.getSelectedSensorPosition(0);
+    initialHeading = Gyro.getYaw();
+    m_drive.setSafetyEnabled(false);
   }
 
   @Override
   public void autonomousPeriodic() {
+    int leftEncoder = -1 * m_left1.getSelectedSensorPosition(0) - leftInitialEncoder;
+    int rightEncoder = -1 * m_right2.getSelectedSensorPosition(0) - rightInitialEncoder;
+    double leftInches = leftEncoder / 4096.0 * Math.PI * 6;
+    double rightInches = rightEncoder / 4096.0 * Math.PI * 6;
+    double heading = Gyro.getYaw() - initialHeading;
+    if (heading < -180) {
+      heading += 360;
+    }
+
+    else if (heading > 180) {
+      heading -= 360;
+    }
+
+    double distance = (rightInches + leftInches) / 2.0;
+    SmartDashboard.putNumber("Distance", distance);
+    SmartDashboard.putNumber("Left Position", leftEncoder);
+    SmartDashboard.putNumber("Right Position", rightEncoder);
+    SmartDashboard.putNumber("Left Distance", leftInches);
+    SmartDashboard.putNumber("Right Distance", rightInches);
+    SmartDashboard.putNumber("Heading", heading);
+    if (autoState.equals("initial")) {
+      if (distance >= 72) {
+        m_left1.set(0);
+        m_right2.set(0);
+        autoState = "turn";
+      }
+      else if (distance >= 36) {
+        m_left1.set(.3);
+        m_right2.set(.3);
+      }
+      else if (distance >= 48) {
+        m_left1.set(.2);
+        m_right2.set(.2);
+      }
+      else if (distance >= 54) {
+        m_left1.set(.1);
+        m_right2.set(.1);
+      }
+      else {
+        m_left1.set(.5);
+        m_right2.set(.5);
+      }
+    }
+    else if (autoState.equals("turn")) {
+      if (heading < -90 || heading > 170) {
+        autoState = "done";
+        m_left1.set(0);
+        m_right2.set(0);
+      }
+      else {
+        m_left1.set(.25);
+        m_right2.set(-.25);
+      }
+    }
   }
 
   @Override
   public void teleopInit() {
+    m_left1.setSelectedSensorPosition(0, 0, 10);
+    m_right2.setSelectedSensorPosition(0, 0, 10);
+    Gyro.reset();
+    m_drive.setSafetyEnabled(true);
   }
 
   @Override
@@ -101,7 +174,20 @@ public class Robot extends TimedRobot {
 		/**
 		 * Drive the robot, 
 		 */
-		m_drive.arcadeDrive(forward, turn);
+    m_drive.arcadeDrive(forward, turn);
+    
+    int leftEncoder = -1 * m_left1.getSelectedSensorPosition(0);
+    int rightEncoder = -1 * m_right2.getSelectedSensorPosition(0);
+    double leftInches = leftEncoder / 4096.0 * Math.PI * 6;
+    double rightInches = rightEncoder / 4096.0 * Math.PI * 6;
+    double heading = Gyro.getYaw();
+    
+
+    SmartDashboard.putNumber("Left Position", leftEncoder);
+    SmartDashboard.putNumber("Right Position", rightEncoder);
+    SmartDashboard.putNumber("Left Distance", leftInches);
+    SmartDashboard.putNumber("Right Distance", rightInches);
+    SmartDashboard.putNumber("Heading", heading);
   }
 
   @Override

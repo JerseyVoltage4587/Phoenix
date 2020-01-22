@@ -33,9 +33,14 @@ public class Robot extends TimedRobot {
   WPI_VictorSPX m_right22=null;  
   DifferentialDrive m_drive =null;
   Joystick m_joy = null;
-
+  int lastLeftEncoder = 0;
+  int lastRightEncoder = 0;
   int leftInitialEncoder = 0;
   int rightInitialEncoder = 0;
+  double leftEncoderRevolutions = 0;
+  double rightEncoderRevolutions = 0;
+  double elapsedTime = 0;
+  long lastNanoSeconds = 0;
   double initialHeading = 0;
   String autoState = null;
 
@@ -154,40 +159,50 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
-    double forward = -1.0 * m_joy.getY();	// Sign this so forward is positive
-		double turn = +1.0 * m_joy.getZ();       // Sign this so right is positive
+  //  double forward = -1.0 * m_joy.getY();	// Sign this so forward is positive
+	//	double turn = +1.0 * m_joy.getZ();       // Sign this so right is positive
         
         /* Deadband - within 10% joystick, make it zero */
-		if (Math.abs(forward) < 0.10) {
-			forward = 0;
-		}
-		if (Math.abs(turn) < 0.10) {
-			turn = 0;
-		}
+	//	if (Math.abs(forward) < 0.10) {
+	//		forward = 0;
+	//	}
+	//	if (Math.abs(turn) < 0.10) {
+	//		turn = 0;
+	//	}
         
 		/**
 		 * Print the joystick values to sign them, comment
 		 * out this line after checking the joystick directions. 
 		 */
-        System.out.println("JoyY:" + forward + "  turn:" + turn );
+   //     System.out.println("JoyY:" + forward + "  turn:" + turn );
         
 		/**
 		 * Drive the robot, 
 		 */
-    m_drive.arcadeDrive(forward, turn);
+   // m_drive.arcadeDrive(forward, turn);
     
+    m_left1.set(0.5);
+    m_right2.set(0.5);
     int leftEncoder = -1 * m_left1.getSelectedSensorPosition(0);
     int rightEncoder = -1 * m_right2.getSelectedSensorPosition(0);
     double leftInches = leftEncoder / 4096.0 * Math.PI * 6;
     double rightInches = rightEncoder / 4096.0 * Math.PI * 6;
+    long nanoSeconds = System.nanoTime();
+    elapsedTime = (double) ((nanoSeconds - lastNanoSeconds) / 1000000000) / 60.0;
+    leftEncoderRevolutions = ((leftEncoder - lastLeftEncoder) / 4096.0) / elapsedTime;
+    rightEncoderRevolutions = ((rightEncoder - lastRightEncoder) / 4096.0) / elapsedTime;
     double heading = Gyro.getYaw();
-    
 
+    SmartDashboard.putNumber("Left RPM", leftEncoderRevolutions);
+    SmartDashboard.putNumber("Right RPM", rightEncoderRevolutions);
     SmartDashboard.putNumber("Left Position", leftEncoder);
     SmartDashboard.putNumber("Right Position", rightEncoder);
     SmartDashboard.putNumber("Left Distance", leftInches);
     SmartDashboard.putNumber("Right Distance", rightInches);
     SmartDashboard.putNumber("Heading", heading);
+    lastLeftEncoder = leftEncoder;
+    lastRightEncoder = rightEncoder;
+    lastNanoSeconds = nanoSeconds; 
   }
 
   @Override

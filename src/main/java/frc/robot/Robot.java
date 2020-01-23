@@ -37,8 +37,12 @@ public class Robot extends TimedRobot {
   int lastRightEncoder = 0;
   int leftInitialEncoder = 0;
   int rightInitialEncoder = 0;
+  int count = 0;
   double leftEncoderRevolutions = 0;
   double rightEncoderRevolutions = 0;
+  double RPM = 0;
+  double averageRPM = 0;
+  double lastAverageRPM = 0;
   double elapsedTime = 0;
   long lastNanoSeconds = 0;
   double initialHeading = 0;
@@ -154,7 +158,7 @@ public class Robot extends TimedRobot {
     m_left1.setSelectedSensorPosition(0, 0, 10);
     m_right2.setSelectedSensorPosition(0, 0, 10);
     Gyro.reset();
-    m_drive.setSafetyEnabled(true);
+    m_drive.setSafetyEnabled(false);
   }
 
   @Override
@@ -188,21 +192,26 @@ public class Robot extends TimedRobot {
     double leftInches = leftEncoder / 4096.0 * Math.PI * 6;
     double rightInches = rightEncoder / 4096.0 * Math.PI * 6;
     long nanoSeconds = System.nanoTime();
-    elapsedTime = (double) ((nanoSeconds - lastNanoSeconds) / 1000000000) / 60.0;
+    elapsedTime = ((nanoSeconds - lastNanoSeconds) / 1000000000.0) / 60.0;
     leftEncoderRevolutions = ((leftEncoder - lastLeftEncoder) / 4096.0) / elapsedTime;
     rightEncoderRevolutions = ((rightEncoder - lastRightEncoder) / 4096.0) / elapsedTime;
+    RPM = (leftEncoderRevolutions + rightEncoderRevolutions) / 2.0;
+    averageRPM = (RPM + lastAverageRPM) / count;
     double heading = Gyro.getYaw();
 
     SmartDashboard.putNumber("Left RPM", leftEncoderRevolutions);
     SmartDashboard.putNumber("Right RPM", rightEncoderRevolutions);
+    SmartDashboard.putNumber("Average RPM", averageRPM);
     SmartDashboard.putNumber("Left Position", leftEncoder);
     SmartDashboard.putNumber("Right Position", rightEncoder);
     SmartDashboard.putNumber("Left Distance", leftInches);
     SmartDashboard.putNumber("Right Distance", rightInches);
     SmartDashboard.putNumber("Heading", heading);
+    lastAverageRPM = RPM;
     lastLeftEncoder = leftEncoder;
     lastRightEncoder = rightEncoder;
-    lastNanoSeconds = nanoSeconds; 
+    lastNanoSeconds = nanoSeconds;
+    count += 1;
   }
 
   @Override

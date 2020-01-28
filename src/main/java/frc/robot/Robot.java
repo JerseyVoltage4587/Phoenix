@@ -43,9 +43,10 @@ public class Robot extends TimedRobot {
   double RPM = 0;
   double averageRPM = 0;
   double lastAverageRPM = 0;
+  double totalRPM = 0;
   double elapsedTime = 0;
-  long lastNanoSeconds = 0;
   double initialHeading = 0;
+  long lastNanoSeconds = 0;
   String autoState = null;
 
   /**
@@ -185,8 +186,9 @@ public class Robot extends TimedRobot {
 		 */
    // m_drive.arcadeDrive(forward, turn);
     
-    m_left1.set(0.5);
-    m_right2.set(0.5);
+    count += 1;
+    m_left1.set(0.7);
+    m_right2.set(0.7);
     int leftEncoder = -1 * m_left1.getSelectedSensorPosition(0);
     int rightEncoder = -1 * m_right2.getSelectedSensorPosition(0);
     double leftInches = leftEncoder / 4096.0 * Math.PI * 6;
@@ -195,13 +197,16 @@ public class Robot extends TimedRobot {
     elapsedTime = ((nanoSeconds - lastNanoSeconds) / 1000000000.0) / 60.0;
     leftEncoderRevolutions = ((leftEncoder - lastLeftEncoder) / 4096.0) / elapsedTime;
     rightEncoderRevolutions = ((rightEncoder - lastRightEncoder) / 4096.0) / elapsedTime;
-    RPM = (leftEncoderRevolutions + rightEncoderRevolutions) / 2.0;
-    averageRPM = (RPM + lastAverageRPM) / count;
+    RPM = (leftEncoderRevolutions + rightEncoderRevolutions) / 2;
+    averageRPM = (RPM + lastAverageRPM) / 2;
+    totalRPM += averageRPM + lastAverageRPM;
     double heading = Gyro.getYaw();
 
     SmartDashboard.putNumber("Left RPM", leftEncoderRevolutions);
     SmartDashboard.putNumber("Right RPM", rightEncoderRevolutions);
     SmartDashboard.putNumber("Average RPM", averageRPM);
+    SmartDashboard.putNumber("Total RPM", totalRPM);
+    SmartDashboard.putNumber("Count", count);
     SmartDashboard.putNumber("Left Position", leftEncoder);
     SmartDashboard.putNumber("Right Position", rightEncoder);
     SmartDashboard.putNumber("Left Distance", leftInches);
@@ -211,7 +216,6 @@ public class Robot extends TimedRobot {
     lastLeftEncoder = leftEncoder;
     lastRightEncoder = rightEncoder;
     lastNanoSeconds = nanoSeconds;
-    count += 1;
   }
 
   @Override

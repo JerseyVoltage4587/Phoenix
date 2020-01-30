@@ -25,13 +25,13 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  * project.
  */
 public class Robot extends TimedRobot {
+  DifferentialDrive m_drive =null;
   WPI_TalonSRX m_left1=null;
   WPI_VictorSPX m_left11=null;
   WPI_VictorSPX m_left12=null;
   WPI_TalonSRX m_right2=null;
   WPI_VictorSPX m_right21=null;
   WPI_VictorSPX m_right22=null;  
-  DifferentialDrive m_drive =null;
   Joystick m_joy = null;
   int lastLeftEncoder = 0;
   int lastRightEncoder = 0;
@@ -164,27 +164,25 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
-  //  double forward = -1.0 * m_joy.getY();	// Sign this so forward is positive
-	//	double turn = +1.0 * m_joy.getZ();       // Sign this so right is positive
+/* double forward = -1.0 * m_joy.getY();	// Sign this so forward is positive
+		double turn = +1.0 * m_joy.getZ();       // Sign this so right is positive
         
         /* Deadband - within 10% joystick, make it zero */
-	//	if (Math.abs(forward) < 0.10) {
-	//		forward = 0;
-	//	}
-	//	if (Math.abs(turn) < 0.10) {
-	//		turn = 0;
-	//	}
+	/*if (Math.abs(forward) < 0.10) {
+			forward = 0;
+		}
+		if (Math.abs(turn) < 0.10) {
+			turn = 0;
+		}
         
-		/**
-		 * Print the joystick values to sign them, comment
-		 * out this line after checking the joystick directions. 
-		 */
-   //     System.out.println("JoyY:" + forward + "  turn:" + turn );
+    /* Print the joystick values to sign them, comment
+		 out this line after checking the joystick directions. */
+  //System.out.println("JoyY:" + forward + "  turn:" + turn );
         
-		/**
+	/**
 		 * Drive the robot, 
 		 */
-   // m_drive.arcadeDrive(forward, turn);
+  //m_drive.arcadeDrive(forward, turn);
     
     count += 1;
     m_left1.set(0.7);

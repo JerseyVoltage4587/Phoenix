@@ -46,6 +46,7 @@ public class Robot extends TimedRobot {
   double totalRPM = 0;
   double elapsedTime = 0;
   double initialHeading = 0;
+  double motorLevel = 0;
   long lastNanoSeconds = 0;
   String autoState = null;
 
@@ -160,6 +161,10 @@ public class Robot extends TimedRobot {
     m_right2.setSelectedSensorPosition(0, 0, 10);
     Gyro.reset();
     m_drive.setSafetyEnabled(false);
+    count = 0;
+    totalRPM = 0;
+    m_left1.set(0.7);
+    m_right2.set(0.7);
   }
 
   @Override
@@ -185,8 +190,7 @@ public class Robot extends TimedRobot {
   //m_drive.arcadeDrive(forward, turn);
     
     count += 1;
-    m_left1.set(0.7);
-    m_right2.set(0.7);
+    
     int leftEncoder = -1 * m_left1.getSelectedSensorPosition(0);
     int rightEncoder = -1 * m_right2.getSelectedSensorPosition(0);
     double leftInches = leftEncoder / 4096.0 * Math.PI * 6;
@@ -198,18 +202,25 @@ public class Robot extends TimedRobot {
     RPM = (leftEncoderRevolutions + rightEncoderRevolutions) / 2;
     averageRPM = (RPM + lastAverageRPM) / 2;
     totalRPM += averageRPM + lastAverageRPM;
+    if (lastAverageRPM < 445 || lastAverageRPM > 460) {
+     double error = Math.abs(lastAverageRPM - 450);
+      motorLevel = 0.7 + (.00009 * error);
+    }
+    m_left1.set(motorLevel);
+    m_right2.set(motorLevel);
     double heading = Gyro.getYaw();
 
     SmartDashboard.putNumber("Left RPM", leftEncoderRevolutions);
     SmartDashboard.putNumber("Right RPM", rightEncoderRevolutions);
     SmartDashboard.putNumber("Average RPM", averageRPM);
+    System.out.print("\nRPM: " + averageRPM + "\nMotor Level: " + motorLevel);
     SmartDashboard.putNumber("Total RPM", totalRPM);
-    SmartDashboard.putNumber("Count", count);
-    SmartDashboard.putNumber("Left Position", leftEncoder);
-    SmartDashboard.putNumber("Right Position", rightEncoder);
-    SmartDashboard.putNumber("Left Distance", leftInches);
-    SmartDashboard.putNumber("Right Distance", rightInches);
-    SmartDashboard.putNumber("Heading", heading);
+    //SmartDashboard.putNumber("Count", count);
+    //SmartDashboard.putNumber("Left Position", leftEncoder);
+    //SmartDashboard.putNumber("Right Position", rightEncoder);
+    //SmartDashboard.putNumber("Left Distance", leftInches);
+    //SmartDashboard.putNumber("Right Distance", rightInches);
+    //SmartDashboard.putNumber("Heading", heading);
     lastAverageRPM = RPM;
     lastLeftEncoder = leftEncoder;
     lastRightEncoder = rightEncoder;

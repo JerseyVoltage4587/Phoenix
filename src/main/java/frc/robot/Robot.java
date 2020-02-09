@@ -12,10 +12,13 @@ import com.ctre.phoenix.motorcontrol.InvertType;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 
+import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj2.command.button.*;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -49,6 +52,23 @@ public class Robot extends TimedRobot {
   double motorLevel = 0;
   long lastNanoSeconds = 0;
   String autoState = null;
+  private static Robot me = null;
+
+  public static Robot getInstance(){
+    return me;
+  }
+
+  public void setLeftMotorLevel(double x){
+    m_left1.set(x);
+  }
+
+  public void setRightMotorLevel(double x){
+    m_right2.set(x);
+  }
+
+  public void setSafetyEnabled(boolean x){
+    m_drive.setSafetyEnabled(x);
+  }
 
   /**
    * This function is run when the robot is first started up and should be used
@@ -56,6 +76,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotInit() {
+    CameraServer.getInstance().startAutomaticCapture();
     m_left1=new WPI_TalonSRX(1);
     m_left11=new WPI_VictorSPX(11);
     m_left12=new WPI_VictorSPX(12);
@@ -85,74 +106,22 @@ public class Robot extends TimedRobot {
 
     /* Joystick for control */
     m_joy = new Joystick(0);
+    me = this;
+    JoystickButton buttonA1	= new JoystickButton(m_joy, 1);
+    buttonA1.whenPressed(new Aim());
     
   }
 
   @Override
   public void autonomousInit() {
-    autoState = "initial";
-    leftInitialEncoder = -1 * m_left1.getSelectedSensorPosition(0);
-    rightInitialEncoder = -1 * m_right2.getSelectedSensorPosition(0);
-    initialHeading = Gyro.getYaw();
+    CommandScheduler.getInstance().schedule(new TurnToAngle(15));
     m_drive.setSafetyEnabled(false);
   }
 
   @Override
   public void autonomousPeriodic() {
-    int leftEncoder = -1 * m_left1.getSelectedSensorPosition(0) - leftInitialEncoder;
-    int rightEncoder = -1 * m_right2.getSelectedSensorPosition(0) - rightInitialEncoder;
-    double leftInches = leftEncoder / 4096.0 * Math.PI * 6;
-    double rightInches = rightEncoder / 4096.0 * Math.PI * 6;
-    double heading = Gyro.getYaw() - initialHeading;
-    if (heading < -180) {
-      heading += 360;
-    }
-
-    else if (heading > 180) {
-      heading -= 360;
-    }
-
-    double distance = (rightInches + leftInches) / 2.0;
-    SmartDashboard.putNumber("Distance", distance);
-    SmartDashboard.putNumber("Left Position", leftEncoder);
-    SmartDashboard.putNumber("Right Position", rightEncoder);
-    SmartDashboard.putNumber("Left Distance", leftInches);
-    SmartDashboard.putNumber("Right Distance", rightInches);
-    SmartDashboard.putNumber("Heading", heading);
-    if (autoState.equals("initial")) {
-      if (distance >= 72) {
-        m_left1.set(0);
-        m_right2.set(0);
-        autoState = "turn";
-      }
-      else if (distance >= 36) {
-        m_left1.set(.3);
-        m_right2.set(.3);
-      }
-      else if (distance >= 48) {
-        m_left1.set(.2);
-        m_right2.set(.2);
-      }
-      else if (distance >= 54) {
-        m_left1.set(.1);
-        m_right2.set(.1);
-      }
-      else {
-        m_left1.set(.5);
-        m_right2.set(.5);
-      }
-    }
-    else if (autoState.equals("turn")) {
-      if (heading < -90 || heading > 170) {
-        autoState = "done";
-        m_left1.set(0);
-        m_right2.set(0);
-      }
-      else {
-        m_left1.set(.25);
-        m_right2.set(-.25);
-      }
-    }
+    CommandScheduler.getInstance().run();
+    SmartDashboard.putNumber("Heading", Gyro.getYaw());
   }
 
   @Override
@@ -160,36 +129,34 @@ public class Robot extends TimedRobot {
     m_left1.setSelectedSensorPosition(0, 0, 10);
     m_right2.setSelectedSensorPosition(0, 0, 10);
     Gyro.reset();
-    m_drive.setSafetyEnabled(false);
-    count = 0;
-    totalRPM = 0;
-    m_left1.set(0.7);
-    m_right2.set(0.7);
+    m_drive.setSafetyEnabled(true);
   }
 
   @Override
   public void teleopPeriodic() {
-/* double forward = -1.0 * m_joy.getY();	// Sign this so forward is positive
-		double turn = +1.0 * m_joy.getZ();       // Sign this so right is positive
+    CommandScheduler.getInstance().run();
+    double forward = -1.0 * m_joy.getY();	// Sign this so forward is positive
+    double turn = +1.0 * m_joy.getRawAxis(4);       // Sign this so right is positive
+    if (m_drive.isSafetyEnabled() == false) {
+      return;
+    }
+    
         
         /* Deadband - within 10% joystick, make it zero */
-	/*if (Math.abs(forward) < 0.10) {
+	  if (Math.abs(forward) < 0.10) {
 			forward = 0;
 		}
 		if (Math.abs(turn) < 0.10) {
 			turn = 0;
 		}
-        
-    /* Print the joystick values to sign them, comment
-		 out this line after checking the joystick directions. */
-  //System.out.println("JoyY:" + forward + "  turn:" + turn );
-        
+     SmartDashboard.putNumber("Foward", forward);
+     SmartDashboard.putNumber("Turn", turn);   
 	/**
 		 * Drive the robot, 
 		 */
-  //m_drive.arcadeDrive(forward, turn);
+    m_drive.arcadeDrive(forward, turn);
     
-    count += 1;
+    /*count += 1;
     
     int leftEncoder = -1 * m_left1.getSelectedSensorPosition(0);
     int rightEncoder = -1 * m_right2.getSelectedSensorPosition(0);
@@ -225,6 +192,7 @@ public class Robot extends TimedRobot {
     lastLeftEncoder = leftEncoder;
     lastRightEncoder = rightEncoder;
     lastNanoSeconds = nanoSeconds;
+    */
   }
 
   @Override
